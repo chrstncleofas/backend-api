@@ -1,0 +1,34 @@
+# Django & REST Framework
+django>=5.1,<6.0
+djangorestframework>=3.15,<4.0
+
+# MongoDB - MongoEngine ODM (primary)
+mongoengine>=0.28,<1.0
+django-rest-framework-mongoengine>=3.4,<4.0
+
+# MongoDB - PyMongo (raw access)
+pymongo>=4.7,<5.0
+
+# MongoDB - Djongo: EXCLUDED — incompatible with Django 5.x (requires sqlparse==0.2.4)
+# Install separately if needed: pip install djongo (will downgrade Django)
+
+# Authentication - JWT
+PyJWT>=2.8,<3.0
+
+# CORS
+django-cors-headers>=4.3,<5.0
+
+# AWS S3
+boto3>=1.35,<2.0
+
+# API Documentation - Swagger/OpenAPI
+drf-spectacular>=0.27,<1.0
+
+# Environment Variables
+python-decouple>=3.8,<4.0
+
+# Production Server
+gunicorn>=22.0,<23.0
+
+# Password Hashing
+bcrypt>=4.1,<5.0
