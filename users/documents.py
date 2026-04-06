@@ -27,6 +27,10 @@ class User(mongoengine.Document):
         'ordering': ['-created_at'],
     }
 
+    @property
+    def is_authenticated(self) -> bool:
+        return True
+
     def save(self, *args, **kwargs):
         self.updated_at = _utcnow()
         return super().save(*args, **kwargs)

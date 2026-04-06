@@ -8,7 +8,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.parsers import MultiPartParser
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+
+from mongoengine import Q
 
 from config.s3 import s3_service
 from config.serializers import FileUploadSerializer
@@ -25,6 +27,13 @@ from users.serializers import (
 from users.tokens import generate_tokens, decode_token
 
 logger = logging.getLogger(__name__)
+
+def _safe_page(request: Request, default: int = 1) -> int:
+    try:
+        page = int(request.query_params.get('page', default))
+        return max(1, page)
+    except (ValueError, TypeError):
+        return default
 
 
 class RegisterView(APIView):
@@ -278,5 +287,61 @@ class AvatarUploadView(APIView):
 
         return Response(
             {'success': True, 'data': UserSerializer(user).data},
+            status=status.HTTP_200_OK,
+        )
+
+class GetAllUsersView(APIView):
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('first_name', type=str, required=False),
+            OpenApiParameter('last_name', type=str, required=False),
+            OpenApiParameter('email', type=str, required=False),
+            OpenApiParameter('search', type=str, required=False),
+            OpenApiParameter('page', type=int, required=False),
+        ],
+        responses={200: UserSerializer(many=True)}
+    )
+    def get(self, request: Request) -> Response:
+        queryset = User.objects(is_active=True)
+
+        first_name_filter = request.query_params.get('first_name')
+        if first_name_filter:
+            queryset = queryset.filter(first_name__icontains=first_name_filter)
+
+        last_name_filter = request.query_params.get('last_name')
+        if last_name_filter:
+            queryset = queryset.filter(last_name__icontains=last_name_filter)
+
+        email_filter = request.query_params.get('email')
+        if email_filter:
+            queryset = queryset.filter(email__icontains=email_filter)
+
+        search = request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search) | Q(last_name__icontains=search)
+            )
+
+        # Safe pagination
+        page = _safe_page(request)
+        page_size = 20
+        start = (page - 1) * page_size
+        users = queryset[start:start + page_size]
+
+        return Response(
+            {
+                'success': True,
+                'data': UserSerializer(users, many=True).data,
+                'pagination': {
+                    'page': page,
+                    'page_size': page_size,
+                    'total': queryset.count(),
+                },
+            },
             status=status.HTTP_200_OK,
         )
