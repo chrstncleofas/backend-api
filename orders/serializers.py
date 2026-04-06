@@ -24,7 +24,16 @@ class OrderSerializer(serializers.Serializer):
     total_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     delivery_fee = serializers.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = serializers.ChoiceField(
-        choices=['pending', 'confirmed', 'preparing', 'ready_for_pickup', 'picked_up', 'delivering', 'delivered', 'cancelled'],
+        choices=[
+            'pending',
+            'confirmed',
+            'preparing',
+            'ready_for_pickup',
+            'picked_up',
+            'delivering',
+            'delivered',
+            'cancelled'
+        ],
         read_only=True,
     )
     delivery_address = serializers.CharField(required=False, allow_blank=True)
@@ -44,5 +53,13 @@ class OrderCreateSerializer(serializers.Serializer):
 
 class OrderStatusUpdateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(
-        choices=['confirmed', 'preparing', 'ready_for_pickup', 'picked_up', 'delivering', 'delivered', 'cancelled'],
+        choices=[
+            'confirmed',
+            'preparing',
+            'ready_for_pickup',
+            'picked_up',
+            'delivering',
+            'delivered',
+            'cancelled'
+        ],
     )

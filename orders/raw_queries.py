@@ -1,22 +1,17 @@
-"""
-Raw pymongo query examples for the orders collection.
-Usage in Django shell: python manage.py shell
-"""
-
 from config.db import get_db
 
 
-def get_customer_orders(customer_id: str):
+def get_customer_orders(customer_id: str) -> list:
     db = get_db()
     return list(db.orders.find({'customer_id': customer_id}).sort('created_at', -1))
 
 
-def get_orders_by_status(order_status: str):
+def get_orders_by_status(order_status: str) -> list:
     db = get_db()
     return list(db.orders.find({'status': order_status}))
 
 
-def get_merchant_revenue(merchant_id: str):
+def get_merchant_revenue(merchant_id: str) -> (dict | None):
     db = get_db()
     pipeline = [
         {'$match': {'merchant_id': merchant_id, 'status': 'delivered'}},
@@ -31,7 +26,7 @@ def get_merchant_revenue(merchant_id: str):
     return result[0] if result else None
 
 
-def get_daily_order_stats(days: int = 7):
+def get_daily_order_stats(days: int = 7) -> list:
     db = get_db()
     from datetime import datetime, timedelta, timezone
     start_date = datetime.now(timezone.utc) - timedelta(days=days)
@@ -48,7 +43,7 @@ def get_daily_order_stats(days: int = 7):
     return list(db.orders.aggregate(pipeline))
 
 
-def get_popular_products(limit: int = 10):
+def get_popular_products(limit: int = 10) -> list:
     db = get_db()
     pipeline = [
         {'$unwind': '$items'},

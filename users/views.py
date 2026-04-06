@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
 from rest_framework.parsers import MultiPartParser
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 
@@ -40,7 +40,7 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     @extend_schema(request=RegisterSerializer, responses={201: UserSerializer})
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -87,7 +87,7 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     @extend_schema(request=LoginSerializer, responses={200: UserSerializer})
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -130,7 +130,7 @@ class TokenRefreshView(APIView):
     permission_classes = [AllowAny]
 
     @extend_schema(request=TokenRefreshSerializer)
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = TokenRefreshSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -173,7 +173,7 @@ class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(responses={200: UserSerializer})
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         return Response(
             {'success': True, 'data': UserSerializer(request.user).data},
             status=status.HTTP_200_OK,
@@ -200,7 +200,7 @@ class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(request=ChangePasswordSerializer)
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = ChangePasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -291,7 +291,7 @@ class AvatarUploadView(APIView):
         )
 
 class GetAllUsersView(APIView):
-    def get_permissions(self):
+    def get_permissions(self) -> list[BasePermission]:
         if self.request.method == 'GET':
             return [AllowAny()]
         return [IsAuthenticated()]

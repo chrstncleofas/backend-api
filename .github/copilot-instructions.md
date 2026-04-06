@@ -91,8 +91,11 @@ backend-api/
 
 ### Strict Typing — Zero Tolerance for `Any`
 
+Every function and method **must** have complete type annotations — no exceptions.
+This includes `self` methods, helper functions, `_utcnow`, `__str__`, `save`, `authenticate`, `get_permissions`, and `setUp`/`tearDown` in tests.
+
 - **Never** use `Any` as a type — not in parameters, returns, variables, or generics
-- **All** function signatures must have type hints on every parameter and the return type
+- **All** function signatures must have type hints on **every** parameter and the return type
 - Use `TypedDict` for dictionary shapes instead of `dict[str, Any]`
 - Use modern built-in generics: `list[str]`, `dict[str, int]`, `set[str]`, `tuple[int, ...]` — **not** `List`, `Dict`, `Set`, `Tuple` from `typing`
 - Use `X | None` instead of `Optional[X]`
@@ -104,6 +107,25 @@ backend-api/
 def find_user(email: str) -> User | None:
     ...
 
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+def save(self, *args: object, **kwargs: object) -> 'User':
+    self.updated_at = _utcnow()
+    return super().save(*args, **kwargs)
+
+def __str__(self) -> str:
+    return self.email
+
+def authenticate(self, request: Request) -> tuple['User', str] | None:
+    ...
+
+def get_permissions(self) -> list[BasePermission]:
+    ...
+
+def custom_exception_handler(exc: Exception, context: dict[str, object]) -> Response:
+    ...
+
 class UploadResult(TypedDict):
     url: str
     key: str
@@ -112,9 +134,14 @@ class UploadResult(TypedDict):
 ALLOWED_TYPES: set[str] = {'image/jpeg', 'image/png'}
 
 # ❌ BAD
-def find_user(email) -> Any:       # Missing param type, Any return
-def process(data: dict[str, Any]): # Any in generic
-from typing import List, Optional  # Old-style imports
+def find_user(email) -> Any:         # Missing param type, Any return
+def process(data: dict[str, Any]):   # Any in generic
+def save(self, *args, **kwargs):     # Missing *args/**kwargs types
+def __str__(self):                   # Missing return type
+def _utcnow():                       # Missing return type
+def authenticate(self, request):     # Missing param + return type
+def get_permissions(self):           # Missing return type
+from typing import List, Optional   # Old-style imports
 ```
 
 ### Clean Coding
@@ -146,14 +173,17 @@ from typing import List, Optional  # Old-style imports
 ```python
 # 1. Standard library
 from datetime import datetime, timezone
+from typing import TypedDict
 
 # 2. Third-party
 import jwt
 import bcrypt
 import mongoengine
 from rest_framework import status
+from rest_framework.request import Request
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import BasePermission, IsAuthenticated
 
 # 3. Django
 from django.conf import settings
@@ -171,7 +201,11 @@ from users.serializers import UserSerializer
 
 ```python
 import mongoengine
-from datetime import datetime
+from datetime import datetime, timezone
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class Product(mongoengine.Document):
@@ -182,8 +216,8 @@ class Product(mongoengine.Document):
     merchant_id = mongoengine.StringField(required=True)
     is_available = mongoengine.BooleanField(default=True)
     images = mongoengine.ListField(mongoengine.StringField())
-    created_at = mongoengine.DateTimeField(default=datetime.utcnow)
-    updated_at = mongoengine.DateTimeField(default=datetime.utcnow)
+    created_at = mongoengine.DateTimeField(default=_utcnow)
+    updated_at = mongoengine.DateTimeField(default=_utcnow)
 
     meta = {
         'collection': 'products',
@@ -191,8 +225,8 @@ class Product(mongoengine.Document):
         'ordering': ['-created_at'],
     }
 
-    def save(self, *args, **kwargs):
-        self.updated_at = datetime.utcnow()
+    def save(self, *args: object, **kwargs: object) -> 'Product':
+        self.updated_at = _utcnow()
         return super().save(*args, **kwargs)
 
     def __str__(self) -> str:
@@ -202,8 +236,10 @@ class Product(mongoengine.Document):
 ### Rules
 
 - Always define `meta` with `collection`, `indexes`, and `ordering`
-- Always include `created_at` and `updated_at` with `_utcnow` helper using `datetime.now(timezone.utc)`
-- Override `save()` to auto-update `updated_at`
+- Always include `created_at` and `updated_at` with `_utcnow() -> datetime` helper using `datetime.now(timezone.utc)`
+- `_utcnow` must always have return type `-> datetime`
+- Override `save()` with `*args: object, **kwargs: object` and return type `'ClassName'`
+- Always annotate `__str__` with `-> str`
 - Use specific field types: `StringField`, `IntField`, `DecimalField`, `BooleanField`, `ListField`, `EmbeddedDocumentField`, `DateTimeField`
 - Set `required=True` on mandatory fields
 - **Never** inherit from `django.db.models.Model`
@@ -242,28 +278,44 @@ class ProductSerializer(serializers.Serializer):
 
 ```python
 from rest_framework import status
+from rest_framework.request import Request
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission, IsAuthenticated, AllowAny
 from drf_spectacular.utils import extend_schema
 
 
 class ProductListView(APIView):
-    permission_classes = [IsAuthenticated]
+    def get_permissions(self) -> list[BasePermission]:
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     @extend_schema(responses={200: ProductSerializer(many=True)})
-    def get(self, request) -> Response:
-        products = Product.objects(is_available=True)
-        return Response({
-            'success': True,
-            'data': ProductSerializer(products, many=True).data,
-        })
+    def get(self, request: Request) -> Response:
+        ...
+
+    @extend_schema(request=ProductCreateSerializer, responses={201: ProductSerializer})
+    def post(self, request: Request) -> Response:
+        ...
+
+    @extend_schema(responses={200: ProductSerializer})
+    def patch(self, request: Request, product_id: str) -> Response:
+        ...
+
+    @extend_schema(responses={204: None})
+    def delete(self, request: Request, product_id: str) -> Response:
+        ...
 ```
 
 ### Rules
 
+- **Every** view method must have `request: Request` and `-> Response` — never bare `def post(self, request):`
+- **Every** path parameter must be typed: `product_id: str`, `order_id: str`
+- `get_permissions` must always return `list[BasePermission]`
+- Private helpers must be typed: `def _get_product(self, product_id: str) -> Product | None:`
 - Always use `@extend_schema()` on every view method for Swagger docs
-- Always set `permission_classes` at class level
+- Always set `permission_classes` at class level or override `get_permissions(self) -> list[BasePermission]:`
 - Use `AllowAny` for public endpoints (register, login)
 - Use `IsAuthenticated` for protected endpoints
 - `request.user` is a MongoEngine `User` document (from `JWTAuthentication`)
@@ -434,12 +486,42 @@ class AvatarUploadView(APIView):
 
 ## Testing
 
-- Place tests in `<app>/tests.py` or `<app>/tests/` directory
-- Use DRF's `APIClient` for endpoint testing
+### Pattern
+
+```python
+import bcrypt
+from rest_framework.test import APIClient
+from rest_framework import status
+from django.test import SimpleTestCase  # NOT TestCase — no SQL DB
+
+from users.documents import User
+from users.tokens import generate_tokens
+
+
+class RegisterViewTests(SimpleTestCase):
+
+    def setUp(self) -> None:
+        self.client = APIClient()
+        self.url = '/api/users/register/'
+
+    def tearDown(self) -> None:
+        User.objects(email__startswith='test').delete()
+
+    def test_register_success(self) -> None:
+        response = self.client.post(self.url, {...}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+```
+
+### Rules
+
+- Use `SimpleTestCase` — **not** `TestCase` (no SQL database configured — `DATABASES = {}`)
+- `setUp(self) -> None` and `tearDown(self) -> None` — always typed
+- All `test_*` methods must be typed: `def test_register_success(self) -> None:`
 - Test both success and error paths
-- Test authentication: valid token, expired token, missing token, wrong token type
-- Use a separate test MongoDB database
-- Clean up test documents in `setUp` / `tearDown`
+- Use `APIClient` for all HTTP calls — never call views directly
+- Authenticate via real JWT: `generate_tokens(str(user.id))` → `client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')`
+- Unauthenticated tests: call `self.client.credentials()` to clear, expect `HTTP_403_FORBIDDEN` (DRF with `UNAUTHENTICATED_USER = None`)
+- Clean up all test documents in `tearDown` using prefix filters
 
 ---
 
@@ -449,10 +531,11 @@ class AvatarUploadView(APIView):
 2. Am I using `serializers.Serializer`, not `ModelSerializer`?
 3. Does the response follow `{success, data/error}` format?
 4. Did I add `@extend_schema()` for Swagger?
-5. Did I set `permission_classes`?
-6. Did I type-hint **every** parameter and return type (no `Any`)?  
-7. Am I importing from the correct local modules?
-8. Did I avoid `django.contrib.auth` entirely?
-9. Is my function ≤ 30 lines? If not, extract a helper.
-10. Am I reusing shared services (`config/s3.py`, `config/db.py`) instead of duplicating logic?
-11. For file uploads: am I using `s3_service` + `FileUploadSerializer`/`MultiFileUploadSerializer`?
+5. Did I set `permission_classes` or `get_permissions(self) -> list[BasePermission]:`?
+6. Did I type-hint **every** parameter and return — including `_utcnow`, `save(*args: object, **kwargs: object)`, `__str__`, `authenticate`, `get_permissions`, `setUp`, `tearDown`, and all path params (`product_id: str`)?
+7. Am I importing `Request` from `rest_framework.request` and `BasePermission` from `rest_framework.permissions` in every file that needs them?
+8. Am I importing from the correct local modules?
+9. Did I avoid `django.contrib.auth` entirely?
+10. Is my function ≤ 30 lines? If not, extract a helper.
+11. Am I reusing shared services (`config/s3.py`, `config/db.py`) instead of duplicating logic?
+12. For file uploads: am I using `s3_service` + `FileUploadSerializer`/`MultiFileUploadSerializer`?

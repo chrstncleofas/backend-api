@@ -2,7 +2,7 @@ import mongoengine
 from datetime import datetime, timezone
 
 
-def _utcnow():
+def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
@@ -25,9 +25,9 @@ class Product(mongoengine.Document):
         'ordering': ['-created_at'],
     }
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: object, **kwargs: object) -> 'Product':
         self.updated_at = _utcnow()
         return super().save(*args, **kwargs)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name} - ₱{self.price}"

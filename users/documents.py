@@ -2,7 +2,7 @@ import mongoengine
 from datetime import datetime, timezone
 
 
-def _utcnow():
+def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
@@ -31,9 +31,9 @@ class User(mongoengine.Document):
     def is_authenticated(self) -> bool:
         return True
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: object, **kwargs: object) -> 'User':
         self.updated_at = _utcnow()
         return super().save(*args, **kwargs)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.email} ({self.role})"

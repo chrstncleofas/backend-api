@@ -1,10 +1,8 @@
 import mongoengine # type: ignore
 from datetime import datetime, timezone
 
-
-def _utcnow():
+def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
-
 
 class OrderItem(mongoengine.EmbeddedDocument):
     product_id = mongoengine.StringField(required=True)
@@ -12,7 +10,6 @@ class OrderItem(mongoengine.EmbeddedDocument):
     quantity = mongoengine.IntField(required=True, min_value=1)
     price = mongoengine.DecimalField(required=True, min_value=0, precision=2)
     subtotal = mongoengine.DecimalField(precision=2)
-
 
 class Order(mongoengine.Document):
     customer_id = mongoengine.StringField(required=True)
@@ -46,9 +43,9 @@ class Order(mongoengine.Document):
         'ordering': ['-created_at'],
     }
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: object, **kwargs: object) -> 'Order':
         self.updated_at = _utcnow()
         return super().save(*args, **kwargs)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Order {self.id} - {self.status} (₱{self.total_amount})"

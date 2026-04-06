@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, BasePermission
 from rest_framework.parsers import MultiPartParser
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 
@@ -25,7 +25,7 @@ def _safe_page(request: Request, default: int = 1) -> int:
 
 
 class ProductListView(APIView):
-    def get_permissions(self):
+    def get_permissions(self) -> list[BasePermission]:
         if self.request.method == 'GET':
             return [AllowAny()]
         return [IsAuthenticated()]
@@ -69,7 +69,7 @@ class ProductListView(APIView):
         )
 
     @extend_schema(request=ProductCreateSerializer, responses={201: ProductSerializer})
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = ProductCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -88,19 +88,19 @@ class ProductListView(APIView):
 
 
 class ProductDetailView(APIView):
-    def get_permissions(self):
+    def get_permissions(self) -> list[BasePermission]:
         if self.request.method == 'GET':
             return [AllowAny()]
         return [IsAuthenticated()]
 
-    def _get_product(self, product_id):
+    def _get_product(self, product_id: str) -> Product | None:
         try:
             return Product.objects.get(id=product_id)
         except Product.DoesNotExist:
             return None
 
     @extend_schema(responses={200: ProductSerializer})
-    def get(self, request, product_id):
+    def get(self, request: Request, product_id: str) -> Response:
         product = self._get_product(product_id)
         if not product:
             return Response(
@@ -144,7 +144,7 @@ class ProductDetailView(APIView):
         )
 
     @extend_schema(responses={204: None})
-    def delete(self, request, product_id):
+    def delete(self, request: Request, product_id: str) -> Response:
         product = self._get_product(product_id)
         if not product:
             return Response(
