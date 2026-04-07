@@ -1,11 +1,12 @@
 from pathlib import Path
 
 import mongoengine
-from decouple import Config, RepositoryEnv, Csv
+from decouple import Config, RepositoryEnv, AutoConfig, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-config = Config(RepositoryEnv(str(BASE_DIR / '.env.local')))
+_env_file = BASE_DIR / '.env.local'
+config: Config = Config(RepositoryEnv(str(_env_file))) if _env_file.exists() else AutoConfig()
 
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)

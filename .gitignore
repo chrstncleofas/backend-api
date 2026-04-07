@@ -22,6 +22,7 @@ db.sqlite3-journal
 *.log
 staticfiles/
 media/
+migrations/
 
 # Environment
 .env

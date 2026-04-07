@@ -539,3 +539,37 @@ class RegisterViewTests(SimpleTestCase):
 10. Is my function ≤ 30 lines? If not, extract a helper.
 11. Am I reusing shared services (`config/s3.py`, `config/db.py`) instead of duplicating logic?
 12. For file uploads: am I using `s3_service` + `FileUploadSerializer`/`MultiFileUploadSerializer`?
+
+
+---
+
+## Docker & Deployment
+
+### Compose Files
+
+| File | Purpose | MongoDB |
+|------|---------|---------|
+| `docker-compose.dev.yml` | Local dev — API + local Mongo container | Local (port 27017) |
+| `docker-compose.prod.yml` | Production — API only, no local Mongo | Atlas via `MONGODB_URI` env var |
+
+### Running
+
+```bash
+# Dev (API + local MongoDB, hot reload on)
+docker compose -f docker-compose.dev.yml up --build
+
+# Prod (Atlas only, detached)
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+### Key Rules for Copilot
+
+- Config is read from `.env.local` (gitignored, never in image)
+- `settings.py` uses file if `.env.local` exists (local dev), falls back to `os.environ` (Docker)
+- `.env.local` values must NOT contain `$` characters — Docker Compose treats them as variable interpolation and silently corrupts values
+- `GET /api/health/` — `AllowAny`, no auth, returns `{success: true, status: "ok"}` — do not add auth to this endpoint
+- Gunicorn config lives in `gunicorn.conf.py` — never hardcode settings in CMD
+- Override workers: `GUNICORN_WORKERS=5`, enable hot reload: `GUNICORN_RELOAD=true`
+- Dockerfile is multi-stage (builder + runtime), runs as non-root `appuser` — do not add `RUN pip install` to the runtime stage
+- Never add `collectstatic` or `migrate` to Dockerfile — `DATABASES = {}` (no SQL), no STATIC_ROOT configured
+- `migrations/` folders are gitignored and dockerignored — never create them, this project uses MongoEngine not Django ORM
