@@ -5,30 +5,30 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - .env.local
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017
-      - MONGODB_NAME=ibay_backend
+      - MONGODB_URI=mongodb+srv://ibaytechproject4229_db_user:REDACTED@cluster0.dcmdo1a.mongodb.net/backend-python-api?retryWrites=true&w=majority
+      - MONGODB_NAME=backend-python-api
     depends_on:
       - mongodb
     restart: unless-stopped
     networks:
-      - ibay-network
+      - backend-network
 
   mongodb:
     image: mongo:7
-    container_name: ibay-mongodb
+    container_name: app-mongodb
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
     restart: unless-stopped
     networks:
-      - ibay-network
+      - backend-network
 
 volumes:
   mongodb_data:
 
 networks:
-  ibay-network:
+  backend-network:
     driver: bridge
