@@ -1,7 +1,7 @@
 services:
   api:
     build: .
-    container_name: ibay-backend-api
+    container_name: backend-api
     ports:
       - "8000:8000"
     env_file:
