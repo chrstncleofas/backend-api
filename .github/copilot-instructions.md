@@ -379,9 +379,16 @@ bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8'))
 ### Root (`config/urls.py`)
 
 ```python
-path('api/users/', include('users.urls')),
-path('api/products/', include('products.urls')),
-path('api/orders/', include('orders.urls')),
+# Versioned business API routes
+path('api/v1/users/', include('users.urls')),
+path('api/v1/products/', include('products.urls')),
+path('api/v1/orders/', include('orders.urls')),
+
+# Infrastructure — NO version prefix (load balancers, Docker healthchecks)
+path('api/health/', health_check, name='health-check'),
+
+# Docs — NO version prefix
+path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ```
 
 ### App URLs (`<app>/urls.py`)
@@ -392,12 +399,17 @@ from products.views import ProductListView, ProductDetailView
 
 urlpatterns = [
     path('', ProductListView.as_view(), name='product-list'),
-    path('<str:pk>/', ProductDetailView.as_view(), name='product-detail'),
+    path('<str:product_id>/', ProductDetailView.as_view(), name='product-detail'),
 ]
 ```
 
-- All API routes are prefixed with `api/`
-- Use `<str:pk>` for MongoDB ObjectId path params (they're strings)
+### Versioning rules
+
+- All **business API** routes are prefixed with `api/v1/` — e.g., `POST /api/v1/users/login/`
+- `api/health/` — **no version** — infra endpoint used by Docker, load balancers, PaaS health probes
+- `api/schema/` — **no version** — documentation only, not a business API
+- When adding a breaking change, add `api/v2/` routes alongside `v1/` — never modify v1 in place
+- Use descriptive path params: `<str:product_id>`, `<str:order_id>` — not generic `<str:pk>`
 - Name every URL pattern
 
 ---

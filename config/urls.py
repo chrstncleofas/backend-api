@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.urls import path, include
 from django.views.generic import RedirectView
 from drf_spectacular.views import (
@@ -23,10 +24,10 @@ urlpatterns = [
     # Health check — used by Docker, load balancers, and PaaS platforms
     path('api/health/', health_check, name='health-check'),
 
-    # API routes
-    path('api/users/', include('users.urls')),
-    path('api/products/', include('products.urls')),
-    path('api/orders/', include('orders.urls')),
+    # Versioned business API routes
+    path(f'api/{settings.API_VERSION}/users/', include('users.urls')),
+    path(f'api/{settings.API_VERSION}/products/', include('products.urls')),
+    path(f'api/{settings.API_VERSION}/orders/', include('orders.urls')),
 
     # Swagger / OpenAPI
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

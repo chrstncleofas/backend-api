@@ -93,12 +93,20 @@ JWT_ALGORITHM = 'HS256'
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000,http://localhost:8080', cast=Csv())
 CORS_ALLOW_CREDENTIALS = True
 
+API_VERSION = 'v1'
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Backend API',
     'DESCRIPTION': 'Django REST Framework API with MongoDB — Experimentation Project',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': f'/api/{API_VERSION}/',
+    'TAGS': [
+        {'name': 'users', 'description': 'Registration, authentication, and profile management'},
+        {'name': 'products', 'description': 'Product catalog — listing, creation, and image uploads'},
+        {'name': 'orders', 'description': 'Order creation, status transitions, and receipt uploads'},
+    ],
     'SECURITY': [{'BearerAuth': []}],
     'APPEND_COMPONENTS': {
         'securitySchemes': {
