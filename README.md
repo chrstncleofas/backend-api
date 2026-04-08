@@ -148,29 +148,29 @@ All gunicorn settings live in `gunicorn.conf.py` — no need to rebuild to chang
 ### Authentication
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| POST | `/api/users/register/` | No | Register new user |
-| POST | `/api/users/login/` | No | Login, get JWT tokens |
-| POST | `/api/users/token/refresh/` | No | Refresh access token |
-| GET | `/api/users/profile/` | Yes | Get current user profile |
-| PATCH | `/api/users/profile/` | Yes | Update profile |
-| POST | `/api/users/change-password/` | Yes | Change password |
+| POST | `/api/v1/users/register/` | No | Register new user |
+| POST | `/api/v1/users/login/` | No | Login, get JWT tokens |
+| POST | `/api/v1/users/token/refresh/` | No | Refresh access token |
+| GET | `/api/v1/users/profile/` | Yes | Get current user profile |
+| PATCH | `/api/v1/users/profile/` | Yes | Update profile |
+| POST | `/api/v1/users/change-password/` | Yes | Change password |
 
 ### Products
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | `/api/products/` | No | List products (with search, filter) |
-| POST | `/api/products/` | Yes | Create product |
-| GET | `/api/products/:id/` | No | Get product detail |
-| PATCH | `/api/products/:id/` | Yes | Update product (owner only) |
-| DELETE | `/api/products/:id/` | Yes | Delete product (owner only) |
+| GET | `/api/v1/products/` | No | List products (with search, filter) |
+| POST | `/api/v1/products/` | Yes | Create product |
+| GET | `/api/v1/products/:id/` | No | Get product detail |
+| PATCH | `/api/v1/products/:id/` | Yes | Update product (owner only) |
+| DELETE | `/api/v1/products/:id/` | Yes | Delete product (owner only) |
 
 ### Orders
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | `/api/orders/` | Yes | List orders (role-based) |
-| POST | `/api/orders/` | Yes | Create order |
-| GET | `/api/orders/:id/` | Yes | Get order detail |
-| PATCH | `/api/orders/:id/status/` | Yes | Update order status |
+| GET | `/api/v1/orders/` | Yes | List orders (role-based) |
+| POST | `/api/v1/orders/` | Yes | Create order |
+| GET | `/api/v1/orders/:id/` | Yes | Get order detail |
+| PATCH | `/api/v1/orders/:id/status/` | Yes | Update order status |
 
 ### Health
 | Method | Endpoint | Auth | Description |
